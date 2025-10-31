@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# GC2 Copilot - Run Demo
+# Shows example pipeline generation
+
+# Get the directory where this script lives
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Change to project root
+cd "$PROJECT_ROOT" || exit 1
+
+# Run demo mode
+exec uv run python main.py --demo

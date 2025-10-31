@@ -1,0 +1,47 @@
+{
+  "resources": [
+    {
+      "resourceName": "data-source-s3",
+      "type": "aws-s3",
+      "properties": {
+        "awsRegion": "us-east-1",
+        "s3Path": "source-bucket/input/csv",
+        "awsAccountName": "prod-account",
+        "kmsKey": "alias/aws/s3",
+        "isEnabled": true,
+        "description": "Source S3 bucket containing original CSV files"
+      }
+    },
+    {
+      "resourceName": "data-destination-s3",
+      "type": "aws-s3",
+      "properties": {
+        "awsRegion": "us-east-1",
+        "s3Path": "output-bucket/processed/csv",
+        "awsAccountName": "prod-account",
+        "kmsKey": "alias/aws/s3",
+        "isEnabled": true,
+        "description": "Destination S3 bucket for transferred CSV files."
+      }
+    },
+    {
+      "resourceName": "route-csv",
+      "type": "route",
+      "properties": {
+        "description": "Move CSV files from data-source-s3 to data-destination-s3",
+        "fileFilter": ".+\\.csv",
+        "isEnabled": true,
+        "source": {
+          "ref": "data-source-s3"
+        },
+        "destination": {
+          "ref": "data-destination-s3"
+        },
+        "failureEmail": "gc2-team@troweprice.com",
+        "successEmail": "gc2-team@troweprice.com",
+        "disableFailureEmail": true,
+        "disableSuccessEmail": false
+      }
+    }
+  ]
+}

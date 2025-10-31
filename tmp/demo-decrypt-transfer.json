@@ -1,0 +1,50 @@
+{
+  "resources": [
+    {
+      "resourceName": "input-s3-bucket",
+      "type": "aws-s3",
+      "properties": {
+        "awsRegion": "us-east-1",
+        "s3Path": "source-bucket/input/csv",
+        "awsAccountName": "prod-account",
+        "kmsKey": "alias/aws/s3",
+        "isEnabled": true,
+        "description": "Source S3 bucket containing PGP encrypted CSV files"
+      }
+    },
+    {
+      "resourceName": "output-s3-bucket",
+      "type": "aws-s3",
+      "properties": {
+        "awsRegion": "us-east-1",
+        "s3Path": "output-bucket/processed/csv",
+        "awsAccountName": "prod-account",
+        "kmsKey": "alias/aws/s3",
+        "isEnabled": true,
+        "description": "Destination S3 bucket for decrypted CSV files."
+      }
+    },
+    {
+      "resourceName": "pgp-decrypt-route",
+      "type": "route",
+      "properties": {
+        "description": "Transfer PGP encrypted CSV files from input-s3-bucket to output-s3-bucket and decrypt them.",
+        "fileFilter": ".+\\.pgp",
+        "isEnabled": true,
+        "source": {
+          "ref": "input-s3-bucket"
+        },
+        "destination": {
+          "ref": "output-s3-bucket"
+        },
+        "actions": [
+          "pgp-decrypt"
+        ],
+        "failureEmail": "gc2-team@troweprice.com",
+        "successEmail": "gc2-team@troweprice.com",
+        "disableFailureEmail": true,
+        "disableSuccessEmail": false
+      }
+    }
+  ]
+}

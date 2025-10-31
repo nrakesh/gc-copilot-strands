@@ -1,0 +1,6 @@
+# Example Terraform variables
+# Copy this file to terraform.tfvars and customize
+
+aws_region  = "us-east-1"
+environment = "dev"
+project_name = "gc2-copilot-strands"
