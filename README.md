@@ -1,29 +1,34 @@
 # GC2 Copilot - Strands
 
-AI-powered GrandCentral (GC2) pipeline generator using AWS Strands Agents framework.
+AI-powered GrandCentral (GC2) pipeline generator using AWS Strands multi-agent framework.
 
 ## 🎯 What is This?
 
-GC2 Copilot analyzes natural language requests and automatically generates valid GC2 pipeline configurations (JSON DAGs) by:
+GC2 Copilot transforms natural language requests into complete, validated GC2 pipeline configurations using intelligent multi-agent orchestration:
 
-1. Understanding user intent through an orchestrator agent
-2. Delegating to specialized agents for each resource type (S3, routes, partners)
-3. Validating configurations against Pydantic models
-4. Deploying to Amazon Bedrock AgentCore for production use
+1. **Orchestrator Agent** coordinates the entire workflow using LLM-powered decision making
+2. **Planner Agent** analyzes user intent and creates resource plans with RAG context
+3. **Specialist Agents** (S3, Route) generate type-specific configurations with validation
+4. **Tool-Based Architecture** enables modular, extensible workflows
 
-## 📚 Documentation
+## ✨ Latest Features
 
-- **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - **START HERE!** Complete guide to agents, tools, and multi-agent patterns
-- **[docs/MULTI_AGENT_WORKFLOW.md](./docs/MULTI_AGENT_WORKFLOW.md)** - Multi-agent pipeline generation workflow
-- **[docs/S3_SPECIALIST.md](./docs/S3_SPECIALIST.md)** - S3 specialist agent guide
-- **[terraform/DEPLOY.md](./terraform/DEPLOY.md)** - Terraform deployment guide for AWS
-- **[terraform/README.md](./terraform/README.md)** - Infrastructure setup and deployment workflow
+- ✅ **Complete Multi-Agent Orchestration** - Intelligent workflow coordination
+- ✅ **Multi-Provider Support** - OpenAI (GPT-4o) and Anthropic (Claude Sonnet)
+- ✅ **Comprehensive Logging** - Full visibility into agent and tool execution
+- ✅ **API Resilience** - Automatic retry with exponential backoff
+- ✅ **Clean JSON Output** - Null properties automatically excluded
+- ✅ **Type-Safe Validation** - Pydantic models prevent invalid configurations
 
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies
 
 ```bash
+# Install uv package manager if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies
 uv sync
 ```
 
@@ -31,199 +36,434 @@ uv sync
 
 ```bash
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env and add your API key (OpenAI or Anthropic)
 ```
 
-### 3. Run Hello World
+**`.env` Configuration:**
+```bash
+# LLM Provider (choose one)
+LLM_PROVIDER=openai  # or "anthropic"
+
+# OpenAI Configuration
+OPENAI_API_KEY=sk-proj-your-key-here
+OPENAI_MODEL=gpt-4o-mini  # or gpt-4o
+
+# Anthropic Configuration (alternative)
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+CLAUDE_MODEL=claude-sonnet-4-5-20250929
+
+# Retry Configuration
+MAX_RETRIES=3
+INITIAL_RETRY_DELAY=2.0
+MAX_RETRY_DELAY=60.0
+```
+
+### 3. Generate Your First Pipeline
 
 ```bash
-uv run python run_planner.py
+# Using shell script (easiest)
+./bin/gc2 "Move CSV files from S3 to another S3 bucket" -o tmp/my-pipeline.json
+
+# Or using Python directly
+uv run python main.py "Move CSV files from S3 to another S3 bucket" -o tmp/pipeline.json
+
+# Or using Python API
+uv run python -c "
+from src.gc2_copilot_strands.agents import generate_gc2_pipeline
+pipeline = generate_gc2_pipeline('Move CSV files from S3 to S3', 'tmp/test.json')
+print(f'Generated {len(pipeline[\"resources\"])} resources')
+"
 ```
 
-Expected output:
-```
-Hello! I'm a GC2 pipeline planner assistant...
-```
-
-### 4. Deploy to AgentCore (Optional)
+### 4. Run Demo
 
 ```bash
-cd terraform
-terraform init
-terraform apply
-
-# Store API key
-aws secretsmanager put-secret-value \
-  --secret-id $(terraform output -raw anthropic_secret_arn) \
-  --secret-string "your-key"
+# See the system in action with example pipelines
+./bin/gc2-demo
 ```
 
 ## 📁 Project Structure
 
 ```
 gc2-copilot-strands/
-├── docs/                        # Documentation
-│   ├── ARCHITECTURE.md          # Multi-agent architecture guide
-│   ├── MULTI_AGENT_WORKFLOW.md  # Complete workflow documentation
-│   └── S3_SPECIALIST.md         # S3 specialist guide
+├── bin/                        # Shell scripts
+│   ├── gc2                     # Main CLI command
+│   ├── gc2-demo                # Run demo examples
+│   └── gc2-test                # Run tests
 │
 ├── src/gc2_copilot_strands/
-│   ├── agents/                  # Specialist agents
-│   │   ├── planner.py           # ✅ Planner agent (with RAG)
-│   │   ├── s3_specialist.py     # ✅ S3 specialist agent
-│   │   └── route_specialist.py  # ✅ Route specialist agent
-│   ├── tools/                   # Strands tools
-│   │   └── rag_tools.py         # ✅ RAG context query tool
-│   ├── models/                  # Pydantic models
-│   │   ├── plan.py              # ResourceSpec, ConnectionSpec, PipelinePlan
-│   │   ├── s3_resource.py       # S3Properties, S3Resource
-│   │   └── route_resource.py    # RouteProperties, RouteResource
-│   ├── vectorstore/             # ChromaDB integration
-│   │   └── chroma_client.py     # Vector store client
-│   └── config.py                # Configuration management
+│   ├── agents/                 # Multi-agent system
+│   │   ├── orchestrator.py     # ⭐ Orchestrator agent (coordinator)
+│   │   ├── planner.py          # Planner agent (with RAG)
+│   │   ├── s3_specialist.py    # S3 resource specialist
+│   │   └── route_specialist.py # Route resource specialist
+│   │
+│   ├── tools/                  # Agent tools
+│   │   ├── orchestrator_tools.py  # ⭐ Orchestrator coordination tools
+│   │   └── rag_tools.py        # RAG context query tools
+│   │
+│   ├── models/                 # Pydantic data models
+│   │   ├── plan.py             # ResourceSpec, ConnectionSpec, PipelinePlan
+│   │   ├── s3_resource.py      # S3Properties, S3Resource
+│   │   └── route_resource.py   # RouteProperties, RouteResource
+│   │
+│   ├── utils/                  # Utilities
+│   │   ├── logger.py           # ⭐ Centralized logging (NEW)
+│   │   └── retry.py            # Retry logic with exponential backoff
+│   │
+│   ├── vectorstore/            # ChromaDB integration
+│   │   └── chroma_client.py    # Vector store client for RAG
+│   │
+│   └── config.py               # Multi-provider configuration
 │
-├── terraform/                   # Infrastructure as code
-│   ├── main.tf                  # Infrastructure (ECR, IAM, logs)
-│   ├── agentcore.tf             # AgentCore runtime deployment
-│   ├── DEPLOY.md                # Deployment guide
-│   └── README.md                # Infrastructure details
+├── docs/                       # Documentation
+│   ├── ARCHITECTURE.md         # Multi-agent architecture guide
+│   ├── MULTI_AGENT_WORKFLOW.md # Complete workflow documentation
+│   └── S3_SPECIALIST.md        # S3 specialist guide
 │
-├── agent_deploy.py              # AgentCore deployment entrypoint
-├── run_planner.py               # Local testing script
-├── test_s3_specialist.py        # S3 specialist workflow test
-├── test_complete_workflow.py    # Complete multi-agent test
-├── verify_rag.py                # RAG integration verification
-└── Dockerfile                   # ARM64 container for AgentCore
+├── scripts/                    # Utility scripts
+│   ├── debug_route_issue.py    # Debug route generation
+│   ├── run_planner.py          # Test planner agent
+│   └── test_complete_workflow.py  # End-to-end tests
+│
+├── terraform/                  # Infrastructure as code
+│   ├── main.tf                 # Infrastructure (ECR, IAM, logs)
+│   ├── agentcore.tf            # AgentCore runtime deployment
+│   └── DEPLOY.md               # Deployment guide
+│
+└── main.py                     # CLI entry point
 ```
 
 ## 🏗️ Architecture
 
-### Current Status: Multi-Agent Pipeline Generation ✅
+### Current Implementation: Complete Multi-Agent Orchestration ✅
 
 ```
-┌────────────────────────────────────┐
-│ Planner Agent (with RAG)           │
-│ - Analyzes user intent             │
-│ - Creates resource plan            │
-│ - Queries ChromaDB                 │
-└───────────┬────────────────────────┘
-            │
-    ┌───────┴────────┐
-    │                │
-    ▼                ▼
-┌─────────┐    ┌──────────┐
-│   S3    │    │  Route   │
-│Specialist│   │Specialist│
-└─────────┘    └──────────┘
+┌─────────────────────────────────────────────────────────────┐
+│ USER REQUEST (Natural Language)                             │
+│ "Move PGP encrypted CSV files from S3, decrypt them"        │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ ORCHESTRATOR AGENT (Strands Agent) ⭐                        │
+│ - LLM-powered intelligent coordination                      │
+│ - Decides which tools to call and when                      │
+│ - Multi-provider support (OpenAI/Anthropic)                 │
+│ - Automatic retry logic                                     │
+│ - Comprehensive logging                                     │
+│                                                             │
+│ Tools Available:                                            │
+│   • plan_new_pipeline                                       │
+│   • generate_s3_resource_config                             │
+│   • generate_route_resource_config                          │
+│   • assemble_pipeline_json                                  │
+│   • save_pipeline_to_file                                   │
+└────────┬────────────────────────────────────────────────────┘
+         │
+         ├──► PHASE 1: Planning
+         │    └──► Planner Agent (with RAG)
+         │         - Queries ChromaDB for patterns
+         │         - Creates ResourceSpecs & ConnectionSpecs
+         │         - Returns: PipelinePlan
+         │
+         ├──► PHASE 2: Resource Generation
+         │    ├──► S3 Specialist (source)
+         │    │    - Queries RAG for S3 schemas
+         │    │    - Generates S3Properties
+         │    │    - Validates with Pydantic
+         │    │
+         │    └──► S3 Specialist (destination)
+         │         - Same process for destination
+         │
+         ├──► PHASE 3: Route Generation
+         │    └──► Route Specialist
+         │         - Queries RAG for route schemas
+         │         - Generates RouteProperties
+         │         - Handles actions (pgp-decrypt, etc.)
+         │         - Validates with Pydantic
+         │
+         ├──► PHASE 4: Assembly
+         │    └──► Combines all resources into pipeline JSON
+         │
+         └──► PHASE 5: Save
+              └──► Writes to output file
+
+┌─────────────────────────────────────────────────────────────┐
+│ COMPLETE GC2 PIPELINE JSON ✅                                │
+│ {                                                           │
+│   "resources": [                                            │
+│     { S3 source }, { S3 destination }, { route }           │
+│   ]                                                         │
+│ }                                                           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Target Architecture (from docs/ARCHITECTURE.md)
+**For detailed architecture patterns, see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)**
 
+## 📊 Multi-Agent Workflow
+
+### Example: Simple S3-to-S3 Transfer
+
+**Input:**
 ```
-┌─────────────────────────────────────────────┐
-│ Pipeline Orchestrator Agent                 │
-│ - Analyzes user intent                      │
-│ - Delegates to specialists                  │
-│ - Assembles final DAG                       │
-└───┬─────────────────────────────────────────┘
-    │
-    ├─► S3 Specialist Agent (wrapped tool)
-    ├─► Route Specialist Agent (wrapped tool)
-    └─► Partner Specialist Agent (wrapped tool)
+"Move CSV files from S3 to another S3 bucket"
 ```
 
-**See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for complete details on:**
-- Agent with tools pattern
-- Agent as tool (wrapped agents)
-- MCP tools integration
-- Multi-agent orchestration
+**Orchestrator Workflow:**
 
-## 🛠️ Development
+1. **Planning Phase** → Calls `plan_new_pipeline` tool
+   - Planner Agent analyzes request with RAG context
+   - Returns: 2 S3 resources + 1 route connection
 
-### Run Tests
+2. **Resource Generation** → Calls `generate_s3_resource_config` twice
+   - S3 Specialist generates source config
+   - S3 Specialist generates destination config
+
+3. **Route Generation** → Calls `generate_route_resource_config`
+   - Route Specialist generates route with file filter `.+\.csv`
+   - No actions needed (simple transfer)
+
+4. **Assembly** → Calls `assemble_pipeline_json`
+   - Combines 3 resources into complete pipeline
+
+5. **Save** → Calls `save_pipeline_to_file`
+   - Writes to `tmp/pipeline.json`
+
+**Output:**
+```json
+{
+  "resources": [
+    {
+      "resourceName": "data-source-s3",
+      "type": "aws-s3",
+      "properties": {
+        "awsRegion": "us-east-1",
+        "s3Path": "source-bucket/input/csv",
+        "awsAccountName": "prod-account",
+        "kmsKey": "alias/aws/s3",
+        "isEnabled": true,
+        "description": "Source S3 bucket for CSV files"
+      }
+    },
+    {
+      "resourceName": "data-destination-s3",
+      "type": "aws-s3",
+      "properties": {
+        "awsRegion": "us-east-1",
+        "s3Path": "output-bucket/processed/csv",
+        "awsAccountName": "prod-account",
+        "kmsKey": "alias/aws/s3",
+        "isEnabled": true,
+        "description": "Destination S3 bucket for CSV files"
+      }
+    },
+    {
+      "resourceName": "route-csv",
+      "type": "route",
+      "properties": {
+        "description": "Route CSV files from source to destination",
+        "fileFilter": ".+\\.csv",
+        "isEnabled": true,
+        "source": { "ref": "data-source-s3" },
+        "destination": { "ref": "data-destination-s3" },
+        "failureEmail": "gc2-team@troweprice.com",
+        "successEmail": "gc2-team@troweprice.com",
+        "disableFailureEmail": true,
+        "disableSuccessEmail": false
+      }
+    }
+  ]
+}
+```
+
+**Note:** `actions` field is excluded when null (clean JSON output ✨)
+
+**For complete workflow details, see [docs/MULTI_AGENT_WORKFLOW.md](./docs/MULTI_AGENT_WORKFLOW.md)**
+
+## 🛠️ Key Features
+
+### ✅ Intelligent Orchestration
+- **LLM-Powered Decision Making**: Orchestrator uses LLM to intelligently decide which tools to call
+- **Adaptive Workflow**: Can handle various request types and complexities
+- **Tool-Based Architecture**: Modular, extensible design for adding new capabilities
+
+### ✅ Multi-Provider Support
+- **OpenAI**: gpt-4o (production), gpt-4o-mini (development/testing)
+- **Anthropic**: Claude Sonnet, Claude Opus
+- **Easy Switching**: Configure via `.env` file
+- **Cost Optimization**: Choose model based on quality/cost needs
+
+### ✅ API Resilience
+- **Automatic Retry**: Exponential backoff on transient errors
+- **Rate Limit Handling**: Graceful handling of API rate limits
+- **Configurable**: Adjust retry parameters via `.env`
+- **Error Detection**: Distinguishes transient vs permanent errors
+
+### ✅ Comprehensive Logging
+- **Tool Call Tracking**: See every tool invocation with arguments
+- **Agent Execution**: Track agent reasoning and decision-making
+- **Debug-Friendly**: Detailed logs for troubleshooting
+- **Structured Format**: Clear, parseable log output
+
+### ✅ RAG-Enhanced Generation
+- **ChromaDB Vector Store**: 4 collections (schemas, templates, connectivity, guide)
+- **Context-Aware**: Each agent queries relevant context
+- **Schema Validation**: Generates configs matching GC2 requirements
+- **Template Examples**: Learns from existing pipeline patterns
+
+### ✅ Type-Safe Validation
+- **Pydantic Models**: Strict type checking for all resources
+- **Structured Output**: LLM generates validated JSON directly
+- **Error Prevention**: Invalid configs caught before assembly
+- **Clean JSON**: Null properties automatically excluded
+
+## 🧪 Testing
+
+### Quick Tests
 
 ```bash
-pytest
+# Run demo with examples
+./bin/gc2-demo
+
+# Test complete workflow
+./bin/gc2-test
+
+# Generate custom pipeline
+./bin/gc2 "Your request here" -o tmp/test-pipeline.json
 ```
 
-### Local Testing
+### Test Individual Components
 
 ```bash
-# Test agent directly
-uv run python run_planner.py
+# Test planner agent
+uv run python -m src.gc2_copilot_strands.agents.planner
 
-# Test with AgentCore wrapper (local server)
-uv run python agent_deploy.py
+# Test S3 specialist
+uv run python -m src.gc2_copilot_strands.agents.s3_specialist
 
-# Test with curl
-curl -X POST http://localhost:8080/invocations \
-  -H "Content-Type: application/json" \
-  -d '{"prompt":"Plan a pipeline to move CSV files from S3"}'
+# Test route specialist
+uv run python -m src.gc2_copilot_strands.agents.route_specialist
+
+# Test orchestrator
+uv run python -m src.gc2_copilot_strands.agents.orchestrator
 ```
 
-### Build Docker Image
+### Debug Route Generation
 
 ```bash
-docker buildx build --platform linux/arm64 -t gc2-planner:latest .
+# Run debug script with detailed logging
+uv run python scripts/debug_route_issue.py
 ```
 
-## 🎓 Learning Resources
+## 📚 Documentation
 
-### New to Strands?
-1. Read [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - Start with "Core Concepts"
-2. Review the simple examples in each pattern section
-3. Try the hello world agent: `run_planner.py`
-4. Add your first tool (see docs/ARCHITECTURE.md Pattern 1)
+### Core Documentation
+- **[QUICKSTART.md](./QUICKSTART.md)** - Get started in 5 minutes
+- **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Multi-agent patterns and best practices
+- **[docs/MULTI_AGENT_WORKFLOW.md](./docs/MULTI_AGENT_WORKFLOW.md)** - Complete workflow guide
+- **[docs/S3_SPECIALIST.md](./docs/S3_SPECIALIST.md)** - S3 specialist deep dive
 
-### Ready to Deploy?
-1. Review [terraform/DEPLOY.md](./terraform/DEPLOY.md)
-2. Set up AWS credentials
-3. Run `terraform apply`
-4. Test your deployed agent
+### Deployment
+- **[terraform/DEPLOY.md](./terraform/DEPLOY.md)** - Deploy to AWS AgentCore
+- **[terraform/README.md](./terraform/README.md)** - Infrastructure overview
 
 ## 🗺️ Roadmap
 
-### Phase 1: Foundation ✅
+### Phase 1: Foundation ✅ COMPLETE
 - [x] Set up Strands framework
-- [x] Create hello world agent
-- [x] Configure Terraform deployment
-- [x] Write architecture documentation
+- [x] Create planner agent with RAG
+- [x] Define Pydantic models
+- [x] Configure ChromaDB vector store
 
-### Phase 2: Specialist Agents ✅
-- [x] Add RAG tools for vector store queries
-- [x] Create S3 specialist agent with validation
-- [x] Create Route specialist agent
-- [ ] Create Partner specialist agents (optional)
+### Phase 2: Specialist Agents ✅ COMPLETE
+- [x] S3 Specialist with structured output
+- [x] Route Specialist with action detection
+- [x] Pydantic validation for all resources
+- [x] RAG integration for each specialist
 
-### Phase 3: Orchestration 🎯
-- [ ] Build orchestrator with wrapped specialists
-- [ ] Implement resource planning logic
-- [ ] Add DAG assembly and validation
-- [ ] End-to-end pipeline generation
+### Phase 3: Orchestration ✅ COMPLETE
+- [x] Build orchestrator as real Strands Agent
+- [x] Implement tool-based workflow
+- [x] Multi-provider support (OpenAI + Anthropic)
+- [x] Retry logic with exponential backoff
+- [x] Comprehensive logging system
+- [x] Clean JSON output (exclude null properties)
+- [x] End-to-end pipeline generation
 
-### Phase 4: Production 🚀
-- [ ] Deploy to AgentCore Runtime
-- [ ] Add observability and logging
+### Phase 4: Production Readiness 🎯 IN PROGRESS
+- [ ] Partner specialist agents (external, internal)
+- [ ] Deploy to AWS AgentCore Runtime
+- [ ] Add observability and metrics
 - [ ] Performance optimization
-- [ ] Error handling and retries
+- [ ] Load testing
 
-### Phase 5: Advanced (Optional) 🔌
+### Phase 5: Advanced Features 🔜 PLANNED
+- [ ] UPDATE workflow (modify existing pipelines)
 - [ ] MCP servers for shared services
 - [ ] Multi-region deployment
 - [ ] CI/CD pipeline
-- [ ] Monitoring and alerting
+- [ ] Advanced error recovery
 
-## 📖 Key Concepts
+## 💡 Example Use Cases
 
-**Agent**: LLM + Tools + System Prompt + Reasoning Loop
+### Simple Transfer
+```bash
+./bin/gc2 "Move CSV files from S3 to another S3 bucket" -o pipeline.json
+```
 
-**Tool**: Python function the LLM can call (decorated with `@tool`)
+### With Decryption
+```bash
+./bin/gc2 "Transfer PGP encrypted files, decrypt them" -o decrypt-pipeline.json
+```
 
-**Wrapped Agent**: An agent that acts as a tool for another agent (gets independent reasoning)
+### Multiple File Types
+```bash
+./bin/gc2 "Copy CSV and TXT files from source to destination S3" -o multi-type.json
+```
 
-**MCP**: Model Context Protocol for accessing external tool servers
+### With Actions
+```bash
+./bin/gc2 "Move JSON files from S3, zip them, send to destination" -o zip-pipeline.json
+```
 
-**See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for detailed explanations and examples!**
+## ⚙️ Configuration
+
+### LLM Provider Selection
+
+Choose your LLM provider in `.env`:
+
+```bash
+# For OpenAI (recommended for cost)
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-proj-your-key
+OPENAI_MODEL=gpt-4o-mini  # or gpt-4o for production
+
+# For Anthropic (recommended for quality)
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-your-key
+CLAUDE_MODEL=claude-sonnet-4-5-20250929
+```
+
+### Retry Configuration
+
+Adjust API retry behavior:
+
+```bash
+MAX_RETRIES=3              # Number of retries
+INITIAL_RETRY_DELAY=2.0    # First retry delay (seconds)
+MAX_RETRY_DELAY=60.0       # Max delay between retries
+```
+
+## 💰 Cost Estimates
+
+Approximate cost per pipeline generation:
+
+- **OpenAI gpt-4o-mini**: $0.002 - $0.005 (recommended for development)
+- **OpenAI gpt-4o**: $0.02 - $0.05 (recommended for production)
+- **Anthropic Claude Sonnet**: $0.01 - $0.03
+
+*Actual costs vary based on request complexity and number of resources*
 
 ## 🤝 Contributing
 
